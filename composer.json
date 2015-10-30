@@ -1,18 +1,41 @@
 {
 	"name": "pyrsmk/olive",
+	"description": "The one API database library",
+	"keywords": [
+		"database",
+		"sql",
+		"server",
+		"pdo",
+		"mongodb",
+		"4d",
+		"cubrid",
+		"firebird",
+		"freetds",
+		"ibm",
+		"informix",
+		"mariadb",
+		"mssql",
+		"mysql",
+		"odbc",
+		"oracle",
+		"postgresql",
+		"sqlite",
+		"sybase"
+	],
 	"license": "MIT",
+	"authors": [{
+		"name": "Aurélien Delogu",
+		"email": "dev@dreamysource.fr",
+		"homepage": "http://dreamysource.fr"
+	}],
+	"require": {
+		"php": ">=5.3.0",
+		"ext-pdo": "*",
+		"ext-mongodb": "*"
+	},
 	"autoload": {
 		"psr-0" : {
 			"" : "src/"
 		}
-	},
-	"archive": {
-		"exclude": [
-			".git/",
-			".gitignore",
-			"tests/",
-			"vendor/",
-			"composer.*"
-		]
 	}
 }
