@@ -2,170 +2,171 @@
 
 namespace Olive;
 
-use Olive\Database;
+use Olive\AbstractDatabase;
 use Olive\Pdo\Table;
 use Olive\Exception\DatabaseError;
 
 /*
-    PDO adapter
-
-    Author
-        Aurélien Delogu (dev@dreamysource.fr)
-
-    PHP dependencies
-        PDO
+	PDO adapter
 */
-abstract class Pdo extends Database{
+abstract class Pdo extends AbstractDatabase{
 
-    /*
-        Connect to the server and select a database
+	/*
+		integer $marker : the marker index, used to generate marker for query inputs
+	*/
+	protected $marker=0;
 
-        Parameters
-            string $name    : database name
-            array $options  : DSN options
-            array           : driver options
+	/*
+		Connect to the server and select a database
 
-        Throw
-            Olive\Exception\DatabaseError
-    */
-    protected function _init($name,array $options=array()){
-        // Get driver options
-        if(func_num_args()>2){
-            $driver_options=(array)func_get_arg(2);
-        }
-        // Extract username and password
-        if($username=$options['username']){
-            unset($options['username']);
-        }
-        if($password=$options['password']){
-            unset($options['password']);
-        }
-        // Create PDO object
-        try{
-            $this->db=new \PDO($this->_getDsn($name,$options),$username,$password,(array)$driver_options);
-            $this->db->setAttribute(\PDO::ATTR_ERRMODE,\PDO::ERRMODE_EXCEPTION);
-        }
-        catch(\Exception $e){
-            throw new DatabaseError($e->getMessage());
-        }
-    }
+		Parameters
+			string $name			: database name
+			array $options			: database options
+			array $driver_options	: driver options
+	*/
+	public function __construct($name,array $options=array()){
+		// Get driver options
+		$driver_options=array();
+		if(func_num_args()>2){
+			$driver_options=(array)func_get_arg(2);
+		}
+		// Extract username and password
+		if($username=$options['username']){
+			unset($options['username']);
+		}
+		if($password=$options['password']){
+			unset($options['password']);
+		}
+		// Create PDO object
+		try{
+			$this->driver=new \PDO($this->_getDsn($name,$options),$username,$password,$driver_options);
+			$this->driver->setAttribute(\PDO::ATTR_ERRMODE,\PDO::ERRMODE_EXCEPTION);
+		}
+		catch(\Exception $e){
+			throw new DatabaseError($e->getMessage());
+		}
+	}
 
-    /*
-        Generate the DSN for that adapter
+	/*
+		Generate the DSN for that adapter
 
-        Parameters
-            string $name    : database name
-            array $options  : DSN options
+		Parameters
+			string $name    : database name
+			array $options  : DSN options
 
-        Return
-            string
-    */
-    abstract protected function _getDsn($name,$options);
+		Return
+			string
+	*/
+	abstract protected function _getDsn($name,$options);
 
-    /*
-        Concatenate options
+	/*
+		Concatenate options
 
-        Parameters
-            string $name    : database name
-            array $options  : DSN options
+		Parameters
+			string $name    : database name
+			array $options  : DSN options
 
-        Return
-            string
-    */
-    protected function _concatenateOptions($options){
-        $elements=array();
-        foreach($options as $name=>$value){
-            $elements[]=$name.'='.$value;
-        }
-        return implode(';',$elements);
-    }
+		Return
+			string
+	*/
+	protected function _concatenateOptions($options){
+		$elements=array();
+		foreach($options as $name=>$value){
+			$elements[]=$name.'='.$value;
+		}
+		return implode(';',$elements);
+	}
 
-    /*
-        Return a container
+	/*
+		Return a container
 
-        Parameters
-            string $name
+		Parameters
+			string $name
 
-        Return
-            Olive\Pdo\Table
-    */
-    public function getContainer($name){
-        return new Table($this,$name,$this->cache);
-    }
+		Return
+			Olive\Pdo\Table
+	*/
+	public function getDataContainer($name){
+		return new Table($this,$name);
+	}
 
-    /*
-        Return all container IDs
+	/*
+		Return all container names
 
-        Return
-            array
+		Return
+			array
+	*/
+	public function getDataContainerNames(){
+		try{
+			$query=$this->driver->query('SHOW TABLES');
+			$names=$query->fetchAll(\PDO::FETCH_ASSOC);
+			$query->closeCursor();
+		}
+		catch(\Exception $e){
+			throw new DatabaseError($e->getMessage());
+		}
+		return $names;
+	}
 
-        Throw
-            Olive\Exception\DatabaseError
-    */
-    public function getContainerNames(){
-        try{
-            $query=$this->db->query('SHOW TABLES');
-            $names=$query->fetchAll(\PDO::FETCH_ASSOC);
-            $query->closeCursor();
-        }
-        catch(\Exception $e){
-            throw new DatabaseError($e->getMessage());
-        }
-        return $names;
-    }
+	/*
+		Escape a string for a SQL request
 
-    /*
-        Begin a transaction
+		Parameters
+			string $str
 
-        Return
-            Olive\Mysql
+		Return
+			string
+	*/
+	public function escape($str){
+		// Don't escape jokers
+		if($str!='*'){
+			// Extract function
+			if(preg_match('/([a-z_]+)\((.+?)\)/i',$str,$matches)){
+				$function=$matches[1];
+				$str=$matches[2];
+			}
+			// Escape tables and fields
+			$pieces=explode('.',(string)$str);
+			foreach($pieces as &$piece){
+				if($piece!='*'){
+					$piece='`'.$piece.'`';
+				}
+			}
+			$str=implode('.',$pieces);
+			// Add function
+			if($function){
+				$str="$function($str)";
+			}
+		}
+		return $str;
+	}
 
-        Throw
-            Olive\Exception\DatabaseError
-    */
-    public function begin(){
-        try{
-            $this->db->beginTransaction();
-        }
-        catch(\Exception $e){
-            throw new DatabaseError($this->db);
-        }
-    }
+	/*
+		Generate a new marker
 
-    /*
-        Commit a transaction
+		Return
+			string
+	*/
+	public function getMarker(){
+		return 'marker'.(++$this->marker);
+	}
 
-        Return
-            Olive\Mysql
+	/*
+		Linearize values if needed
 
-        Throw
-            Olive\Exception\DatabaseError
-    */
-    public function commit(){
-        try{
-            $this->db->commit();
-        }
-        catch(\Exception $e){
-            throw new DatabaseError($this->db);
-        }
-    }
-
-    /*
-        Rollback a transaction
-
-        Return
-            Olive\Mysql
-
-        Throw
-            Olive\Exception\DatabaseError
-    */
-    public function rollback(){
-        try{
-            $this->db->rollBack();
-        }
-        catch(\Exception $e){
-            throw new DatabaseError($this->db);
-        }
-    }
+		Return
+			array
+	*/
+	public function prepareData(array $data){
+		foreach($data as $name=>&$value){
+			if(is_array($value)){
+				$value=serialize($value);
+			}
+			else if(is_string($value) && strpos($value,'##array##')===0){
+				$value=unserialize($value);
+			}
+		}
+		return $data;
+	}
 
 }

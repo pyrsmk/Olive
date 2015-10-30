@@ -5,9 +5,9 @@ namespace Olive;
 use Olive\Pdo;
 
 /*
-	MySQL adapter
+	FreeTDS adapter
 */
-class Mysql extends Pdo{
+class Freetds extends Pdo{
 
 	/*
 		Generate the DSN for that adapter
@@ -17,10 +17,7 @@ class Mysql extends Pdo{
 			array $options  : database options
 	*/
 	protected function _getDsn($name,$options){
-		if(!isset($options['host'])){
-			$options['host']='localhost';
-		}
-		return "mysql:dbname=$name;".$this->_concatenateOptions($options);
+		return "dblib:database=$name;".$this->_concatenateOptions($options);
 	}
 
 }

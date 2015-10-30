@@ -3,9 +3,6 @@
 namespace Olive;
 
 /*
-    Throwed when Olive encounters an error
-
-    Author
-        Aurélien Delogu (dev@dreamysource.fr)
+	Throwed when Olive encounters an error
 */
 class Exception extends \Exception{}
