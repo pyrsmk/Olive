@@ -238,6 +238,7 @@ class Query extends AbstractQuery{
 		);
 		$values=array();
 		$namespace=$this->database->getNamespace();
+		$joined=array($this->name);
 		// Generate SELECT clause
 		$selects=array();
 		if($this->query['select']){
@@ -257,7 +258,9 @@ class Query extends AbstractQuery{
 		$clauses['from'] = '';
 		if(count($this->query['from'])) {
 			$clauses['from'] = 'FROM '.implode(', ', array_map(
-				function ($table, $alias) use($namespace) {
+				function ($table, $alias) use($namespace, &$joined) {
+					$joined[] = $table;
+					$joined[] = $alias;
 					return sprintf(
 						"%s AS %s",
 						$this->database->escape($namespace.$table),
@@ -271,26 +274,26 @@ class Query extends AbstractQuery{
 		if(!in_array($this->name, $this->query['from'])) {
 			$clauses['from'] .= $clauses['from'] ? ', ' : 'FROM ';
 			$clauses['from'] .= $this->database->escape($namespace.$this->name);
+			$joined[] = $this->name;
 		}
 		// Generate JOIN clauses
 		if($this->query['join']){
 			$joins=array();
-			$joined=array($namespace.$this->name);
 			foreach($this->query['join'] as $join){
 				// Prepare join variables
-				if(in_array($join['container1'],$joined)){
-					$field1 = $join['field1'];
-					$table1 = $join['container1'];
-					$table2 = $join['container2'];
-					$field2 = $join['field2'];
-				}
-				else{
+				if(in_array($join['container1'], $joined)){
 					$field1 = $join['field2'];
 					$table1 = $join['container2'];
 					$table2 = $join['container1'];
 					$field2 = $join['field1'];
 				}
-				$joined[]=$table2;
+				else{
+					$field1 = $join['field1'];
+					$table1 = $join['container1'];
+					$table2 = $join['container2'];
+					$field2 = $join['field2'];
+				}
+				$joined[] = $table1;
 				// Generate clause
 				$joins[] = 'LEFT JOIN '.$this->database->escape($namespace.$table1).' ON '.
 						 $this->database->escape($namespace.$table1).'.'.$this->database->escape($field1).'='.

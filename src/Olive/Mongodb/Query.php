@@ -299,7 +299,7 @@ class Query extends AbstractQuery{
 			array
 	*/
 	protected function _joinCollectionsTo($results){
-		$joined=array($this->database->getNamespace().$this->name);
+		$joined=array($this->name);
 		foreach($this->query['join'] as $join){
 			// Prepare join variables
 			if(in_array($join['container1'],$joined)){

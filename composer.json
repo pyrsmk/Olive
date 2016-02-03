@@ -1,6 +1,6 @@
 {
 	"name": "pyrsmk/olive",
-	"description": "One API to rule them all",
+	"description": "Handle several database types with the same API",
 	"keywords": [
 		"database",
 		"sql",
