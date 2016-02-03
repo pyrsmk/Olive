@@ -2,9 +2,7 @@
 
 namespace Olive;
 
-use Olive\AbstractDatabase;
 use Olive\Pdo\Table;
-use Olive\Exception\DatabaseError;
 
 /*
 	PDO adapter
@@ -15,26 +13,27 @@ abstract class Pdo extends AbstractDatabase{
 		integer $marker : the marker index, used to generate marker for query inputs
 	*/
 	protected $marker=0;
-
+	
 	/*
-		Connect to the server and select a database
-
+		Initialize the database
+		
 		Parameters
-			string $name			: database name
-			array $options			: database options
-			array $driver_options	: driver options
+			string $name	: database name
+			array $options	: database options
 	*/
-	public function __construct($name,array $options=array()){
+	protected function _initDatabase($name, $options) {
 		// Get driver options
 		$driver_options=array();
 		if(func_num_args()>2){
 			$driver_options=(array)func_get_arg(2);
 		}
 		// Extract username and password
-		if($username=$options['username']){
+		$username = isset($options['username']) ? $options['username'] : null;
+		if(isset($options['username'])) {
 			unset($options['username']);
 		}
-		if($password=$options['password']){
+		$password = isset($options['password']) ? $options['password'] : null;
+		if(isset($options['password'])) {
 			unset($options['password']);
 		}
 		// Create PDO object
@@ -43,7 +42,7 @@ abstract class Pdo extends AbstractDatabase{
 			$this->driver->setAttribute(\PDO::ATTR_ERRMODE,\PDO::ERRMODE_EXCEPTION);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 	}
 
@@ -99,11 +98,11 @@ abstract class Pdo extends AbstractDatabase{
 	public function getDataContainerNames(){
 		try{
 			$query=$this->driver->query('SHOW TABLES');
-			$names=$query->fetchAll(\PDO::FETCH_ASSOC);
+			$names=$query->fetchAll(\PDO::FETCH_COLUMN);
 			$query->closeCursor();
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 		return $names;
 	}
@@ -134,7 +133,7 @@ abstract class Pdo extends AbstractDatabase{
 			}
 			$str=implode('.',$pieces);
 			// Add function
-			if($function){
+			if(isset($function)){
 				$str="$function($str)";
 			}
 		}
@@ -149,24 +148,6 @@ abstract class Pdo extends AbstractDatabase{
 	*/
 	public function getMarker(){
 		return 'marker'.(++$this->marker);
-	}
-
-	/*
-		Linearize values if needed
-
-		Return
-			array
-	*/
-	public function prepareData(array $data){
-		foreach($data as $name=>&$value){
-			if(is_array($value)){
-				$value=serialize($value);
-			}
-			else if(is_string($value) && strpos($value,'##array##')===0){
-				$value=unserialize($value);
-			}
-		}
-		return $data;
 	}
 
 }

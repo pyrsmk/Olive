@@ -23,7 +23,29 @@ abstract class AbstractDatabase implements ArrayAccess{
 			string $name	: database name
 			array $options	: database options
 	*/
-	abstract public function __construct($name,array $options=array());
+	public function __construct($name, array $options = array()) {
+		if(!$this::isSupported()) {
+			throw new Exception("Database type not supported");
+		}
+		$this->_initDatabase($name, $options);
+	}
+	
+	/*
+		Initialize the database
+		
+		Parameters
+			string $name	: database name
+			array $options	: database options
+	*/
+	abstract protected function _initDatabase($name, $options);
+	
+	/*
+		Verify if the adapter is supported by the environment
+		
+		Return
+			boolean
+	*/
+	abstract static public function isSupported();
 
 	/*
 		Return the database driver
@@ -88,7 +110,7 @@ abstract class AbstractDatabase implements ArrayAccess{
 			Olive\AbstractDataContainer
 	*/
 	public function __get($name){
-		return $this->getDataContainer($this->getNamespace().(string)$name);
+		return $this->getDataContainer((string)$name);
 	}
 
 	/*

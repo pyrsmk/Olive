@@ -2,8 +2,6 @@
 
 namespace Olive;
 
-use Olive\Pdo;
-
 /*
 	Informix adapter
 */
@@ -18,6 +16,16 @@ class Informix extends Pdo{
 	*/
 	protected function _getDsn($name,$options){
 		return 'informix:'.$this->_concatenateOptions($options);
+	}
+	
+	/*
+		Verify if the adapter is supported by the environment
+		
+		Return
+			boolean
+	*/
+	static public function isSupported() {
+		return extension_loaded('pdo') && in_array('informix', \PDO::getAvailableDrivers());
 	}
 
 }

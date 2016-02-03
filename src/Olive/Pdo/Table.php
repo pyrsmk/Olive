@@ -4,7 +4,6 @@ namespace Olive\Pdo;
 
 use PDO;
 use Olive\Exception;
-use Olive\Exception\DatabaseError;
 use Olive\AbstractDataContainer;
 
 /*
@@ -19,7 +18,7 @@ class Table extends AbstractDataContainer{
 			Olive\Pdo\Query
 	*/
 	protected function _getNewQuery(){
-		return new Query;
+		return new Query($this->database, $this->name);
 	}
 
 	/*
@@ -39,22 +38,23 @@ class Table extends AbstractDataContainer{
 					 (array)func_get_arg(1):
 					 array();
 			// Prepare markers
-			$data=$this->database->prepareData($data);
-			$names=array();
-			$markers=array();
-			foreach($data as $name=>$value){
-				$names[]=$this->database->escape($name);
-				$markers[]=':'.$name;
+			$names = array();
+			$markers = array();
+			$values = array();
+			foreach($data as $name => $value) {
+				$names[] = $this->database->escape($name);
+				$markers[] = ':'.$name;
+				$values[':'.$name] = $value;
 			}
 			// Prepare query
-			$query='INSERT INTO '.$this->database->escape($this->name).' ('.implode(',',$names).') VALUES ('.implode(',',$markers).')';
+			$query='INSERT INTO '.$this->database->escape($this->database->getNamespace().$this->name).' ('.implode(',',$names).') VALUES ('.implode(',', $markers).')';
 			// Insert new row
 			$this->database->getDriver()
 						   ->prepare($query,$options)
-						   ->execute($data);
+						   ->execute($values);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 		return $this->database->getDriver()
 							  ->lastInsertId();
@@ -74,7 +74,6 @@ class Table extends AbstractDataContainer{
 					 (array)func_get_arg(1):
 					 array();
 			// Prepare data
-			$data=$this->database->prepareData($data);
 			$markers=array();
 			$fields=array();
 			$update_values=array();
@@ -87,7 +86,7 @@ class Table extends AbstractDataContainer{
 				$execute_values[$marker]=$value;
 			}
 			// Prepare query
-			$query='INSERT INTO '.$this->database->escape($this->name).
+			$query='INSERT INTO '.$this->database->escape($this->database->getNamespace().$this->name).
 				   ' ('.implode(',',$fields).
 				   ') VALUES ('.implode(',',$markers).
 				   ') ON DUPLICATE KEY UPDATE '.implode(',',$update_values);
@@ -96,7 +95,7 @@ class Table extends AbstractDataContainer{
 			$statement->execute($execute_values);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 		$id=$this->database->getDriver()
 						   ->lastInsertId();

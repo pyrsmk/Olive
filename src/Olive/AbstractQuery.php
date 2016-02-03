@@ -3,7 +3,6 @@
 namespace Olive;
 
 use Olive\AbstractDatabase as Database;
-use Olive\Exception;
 
 /*
 	Abstract query

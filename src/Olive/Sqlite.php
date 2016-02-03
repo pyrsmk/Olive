@@ -2,9 +2,7 @@
 
 namespace Olive;
 
-use Olive\Pdo;
 use Olive\Sqlite\Table;
-use Olive\Exception\DatabaseError;
 
 /*
 	SQLite adapter
@@ -19,12 +17,22 @@ class Sqlite extends Pdo{
 			array $options  : database options
 	*/
 	protected function _getDsn($name,$options){
-		if($options['sqlite2']){
+		if(isset($options['sqlite2'])) {
 			return 'sqlite2:'.$name;
 		}
 		else{
 			return 'sqlite:'.$name;
 		}
+	}
+	
+	/*
+		Verify if the adapter is supported by the environment
+		
+		Return
+			boolean
+	*/
+	static public function isSupported() {
+		return extension_loaded('pdo') && in_array('sqlite', \PDO::getAvailableDrivers());
 	}
 
 	/*
@@ -54,7 +62,7 @@ class Sqlite extends Pdo{
 			$query->closeCursor();
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 		// Clean up
 		$names=array();

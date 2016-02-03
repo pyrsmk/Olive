@@ -3,12 +3,22 @@
 namespace Olive\Sqlite;
 
 use Olive\Pdo\Table as PdoTable;
-use Olive\Exception\DatabaseError;
+use Olive\Exception;
 
 /*
 	Sqlite table data container
 */
 class Table extends PdoTable{
+
+	/*
+		Return a new query object
+
+		Return
+			Olive\Pdo\Query
+	*/
+	protected function _getNewQuery(){
+		return new Query($this->database, $this->name);
+	}
 
 	/*
 		Save a row
@@ -42,7 +52,7 @@ class Table extends PdoTable{
 			}
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 		return $result;
 	}

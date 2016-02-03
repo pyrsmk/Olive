@@ -2,8 +2,6 @@
 
 namespace Olive;
 
-use Olive\Pdo;
-
 /*
 	MariaDB adapter
 */

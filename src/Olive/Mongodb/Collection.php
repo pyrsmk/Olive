@@ -5,7 +5,6 @@ namespace Olive\Mongodb;
 use MongoId;
 use MongoCollection;
 use Olive\Exception;
-use Olive\Exception\DatabaseError;
 use Olive\AbstractDataContainer;
 
 /*
@@ -37,7 +36,7 @@ class Collection extends AbstractDataContainer{
 			Olive\Mongodb\Query
 	*/
 	protected function _getNewQuery(){
-		return new Query;
+		return new Query($this->database, $this->name);
 	}
 
 	/*
@@ -60,7 +59,7 @@ class Collection extends AbstractDataContainer{
 			$this->collection->insert($document,$options);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 		return (string)$document['_id'];
 	}
@@ -82,7 +81,7 @@ class Collection extends AbstractDataContainer{
 			$this->collection->save($document,$options);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 	}
 

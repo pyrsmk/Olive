@@ -1,16 +1,16 @@
 Olive 0.24.0
 ============
 
-Olive is a database library that aims to handle several database types with one simple procedural API. It is designed for small to medium projects that don't need to be highly optimized because the API just supports the common database tasks.
+Olive is a database library that aims to handle several databases with one simple API. It is designed for small to medium projects that don't need to be highly optimized because the API just supports the common tasks.
 
-This project is a proof-of-concept that can be useful for many developers. Even if you can switch between different database types (like MySQL or MongoDB) with the same project and the same data structure, I __do not__ encourage anyone to do it. Each database system has its own pros and cons and you should choose wisely what to use for your needs. Moreover, some methods on the API can be greedy, like `join()` with MongoDB which runs one additional request per join to retrieve data and then merges it with PHP. MongoDB is relation-less and [should not be used with relational data structures](http://www.sarahmei.com/blog/2013/11/11/why-you-should-never-use-mongodb/).
+This project is a proof-of-concept that can be useful for many developers.
 
-But if for some reason you fucking don't care, or you only need a nice API, then let's go!
+Even if you can switch between different database types (like MySQL and MongoDB) with the same project and the same data structure, I __do not__ encourage anyone to do it. Each database system has its own pros and cons and you should choose wisely what to use for your needs. Moreover, some methods on the API can be greedy, like `join()` with MongoDB which runs one additional request per join to retrieve data.
+
+Please not that MongoDB is relation-less and [should not be used with relational data structures](http://www.sarahmei.com/blog/2013/11/11/why-you-should-never-use-mongodb/).
 
 Installation
 ------------
-
-Pick up the source or install it with [Composer](https://getcomposer.org/) :
 
 ```json
 composer require pyrsmk/olive
@@ -29,13 +29,6 @@ Features
 - support for regexes
 - namespaces
 - simple ORM/ODM support
-- automatic (un)serialize of arrays with PDO (that mean you can save arrays as with MongoDB)
-
-Supported databases
--------------------
-
-- All PDO supported databases like MySQL/MariaDB, PostgreSQL, SQLite, ...
-- MongoDB
 
 Create database connection
 --------------------------
@@ -59,19 +52,17 @@ Creating a database connection works the same over all database adapters, it tak
 - [Olive\Sqlsrv](http://php.net/manual/en/ref.pdo-sqlsrv.connection.php) (MS SQL Server and SQL Azure)
 - [Olive\Sybase](http://php.net/manual/en/ref.pdo-dblib.connection.php)
 
-But some examples are better :
-
 ### MongoDB
 
 ```php
 // Create a connection to a database on localhost using default 27017 port
-$olive=new Olive\Mongodb('my_database',array(
+$olive=new Olive\Mongodb('my_database', array(
     'username' => 'root',
     'password' => 'blahblahblah'
 ));
 
 // Create a connection to mongodb.example.com:67095 (you can easily add more hosts if you want)
-$olive=new Olive\Mongodb('my_database',array(
+$olive=new Olive\Mongodb('my_database', array(
     'username' => 'root',
     'password' => 'blahblahblah',
     'hosts' => array(
@@ -84,7 +75,7 @@ $olive=new Olive\Mongodb('my_database',array(
 
 ```php
 // Create a connection on localhost ('host' option is optional)
-$olive=new Olive\Mysql('my_database',array(
+$olive=new Olive\Mysql('my_database', array(
     'username' => 'root',
     'password' => 'blahblahblah',
     'host' => 'localhost'
@@ -98,7 +89,7 @@ $olive=new Olive\Mysql('my_database',array(
 $olive=new Olive\Sqlite('path/to/database.db');
 
 // Create a connection with SQLite2
-$olive=new Olive\Sqlite('path/to/database.db',array(
+$olive=new Olive\Sqlite('path/to/database.db', array(
     'sqlite2' => true
 ));
 ```
@@ -109,22 +100,22 @@ Get data containers
 A data container is an abstraction class for a table or a collection, per example. Data containers are the entry point to create queries. We can retrieve them with a simple call to :
 
 ```php
-$olive=new Olive\MariaDB('my_database',$options);
+$olive = new Olive\MariaDB('my_database', $options);
 
 // Get the users table
-$container=$olive->users;
+$container = $olive->users;
 ```
 
 If your table has a weird name, you can get it anyway with :
 
 ```php
-$container=$olive['some_weird#table;name'];
+$container = $olive['some_weird#table;name'];
 ```
 
 We strongly advise you to use namespaces in your applications so that your database is not pollute by random tables and avoid incompatibility issues between different applications/websites :
 
 ```php
-$container=$olive->my_app_users;
+$container = $olive->my_app_users;
 ```
 
 In Olive, you can specify a global namespace for simplicity :
@@ -149,7 +140,7 @@ The `insert()`, `update()`, `save()` and `remove()` are used for basic CRUD oper
 
 ```php
 // Insert data
-$new_id=$olive->people->insert(array(
+$new_id = $olive->people->insert(array(
     'firstname' => 'John',
     'lastname' => 'Doe',
     'age' => 52
@@ -157,7 +148,7 @@ $new_id=$olive->people->insert(array(
 
 // Update data
 $olive->people
-      ->search('id','is',$new_id)
+      ->search('_id', 'is', $new_id)
       ->update(array(
             'firstname' => 'John',
             'lastname' => 'Doe',
@@ -166,7 +157,7 @@ $olive->people
 
 // Save data
 $olive->people->save(array(
-    'id' => 123,
+    '_id' => 123,
     'firstname' => 'John',
     'lastname' => 'Doe',
     'age' => 52
@@ -174,7 +165,7 @@ $olive->people->save(array(
 
 // Remove data
 $olive->people
-      ->search('id','is',$new_id)
+      ->search('_id', 'is', $new_id)
       ->remove();
 ```
 
@@ -199,11 +190,11 @@ As you have seen, searches use a simple syntax to handle conditional operators. 
 Take a look at how we're getting results :
 
 ```php
-$ids=array(14,51,20,18);
+$ids = array(14, 51, 20, 18);
 
 // Search for articles with an ID that is not in the $ids array
 $olive->articles
-      ->search('id','not in',$ids)
+      ->search('_id', 'not in', $ids)
       ->fetch();
 
 // Get all articles
@@ -217,7 +208,7 @@ The `fetch()` method retrieves all results. But there's other methods like `fetc
 ```php
 // Get the title of the article with the 72 ID
 $title=$olive->articles
-             ->search('id','is',72)
+             ->search('_id', 'is', 72)
              ->select('title')
              ->fetchFirst();
 ```
@@ -226,11 +217,11 @@ There's also direct methods to search and retrieve in one call :
 
 ```php
 // Get articles written by '@pyrsmk'
-$olive->articles->find('author_id','is','@pyrsmk');
+$olive->articles->find('author_id', 'is', '@pyrsmk');
 // Get one article
-$olive->articles->findOne('id','is',10);
+$olive->articles->findOne('_id', 'is', 10);
 // Get the first field of the requested article
-$olive->articles->findFirst('id','is',10);
+$olive->articles->findFirst('_id', 'is', 10);
 ```
 
 But please note that `findFirst()` is here for API consistency. Since we're not selecting any field, all of them are returned and the first field is often the ID of the row.
@@ -240,17 +231,17 @@ Of course, you can specify several searches in one request. Each search will be 
 ```php
 // Let's get admins less older than 50 yo
 $title=$olive->members
-             ->search('group','is','admins')
-             ->search('age','less','50')
+             ->search('group', 'is', 'admins')
+             ->search('age', 'less', '50')
              ->fetch();
 ```
 
 Let's get a further look how searching works. In fact, each call to `search()` will be concatenated with `AND` operators. But we sometimes need to add an `OR` clause to the query. It is obtained by calling the `or()` method :
 
 ```php
-$olive->articles->search('author_id','is','@pyrsmk')
-                ->or('author_id','is','@dreamysource')
-                ->or('author_id','is','@4lbl');
+$olive->articles->search('author_id', 'is', '@pyrsmk')
+                ->or('author_id', 'is', '@dreamysource')
+                ->or('author_id', 'is', '@4lbl');
 ```
 
 All `or()` clauses will be appended to the previous search.
@@ -259,21 +250,37 @@ All `or()` clauses will be appended to the previous search.
 
 ```php
 // Get title, text, author and date fields
-$article=$olive->articles
-               ->search('id','is',72)
-               ->select('title')
-               ->select('text')
-               ->select('author')
-               ->select('date')
-               ->fetchOne();
+$article = $olive->articles
+                 ->search('_id', 'is', 72)
+                 ->select('title')
+                 ->select('text')
+                 ->select('author')
+                 ->select('date')
+                 ->fetchOne();
 
-// The second parameter of select() is taking the alias for that field
-$item=$olive->items
-            ->search('iditem','is',72)
-            ->select('iditem','id')
-            ->select('french','text')
-            ->select('h1','title')
-            ->fetchOne();
+// The second parameter of select() is the alias
+$item = $olive->items
+              ->search('iditem', 'is', 72)
+              ->select('iditem', '_id')
+              ->select('text', 'french')
+              ->select('title', 'h1)
+              ->fetchOne();
+```
+
+With a SQL database, you could need to set aliases for several tables in your query to avoid conflicts :
+
+```php
+$results = $olive->categories
+				 ->search('root.idparent', 'is', $id)
+				 ->from('categories', 'root')
+				 ->from('categories', 'subcategories')
+				 ->join('root.idparent', 'subcategories.idcat')
+				 ->join('subcategories.idcat', 'items.idcat')
+				 ->select('subcategories.idcat', '_id')
+				 ->select('items.title')
+				 ->join('items.idimg', 'images.idimg')
+				 ->select('images.uriimg', 'image')
+				 ->fetch();
 ```
 
 ### Join
@@ -281,12 +288,12 @@ $item=$olive->items
 ```php
 // Get articles from two weeks ago, with the author name
 $olive->articles
-      ->search('date','greater',time()-1209600)
-      ->join('articles.author_id','members.id')
+      ->search('date', 'greater', time() - 1209600)
+      ->join('articles.author_id', 'members.id')
       ->select('title')
       ->select('text')
       ->select('date')
-      ->select('members.name','author')
+      ->select('members.name', 'author')
       ->fetch();
 ```
 
@@ -297,7 +304,7 @@ The `sort()` method takes the field and the sorting direction as arguments. The 
 ```php
 $olive->articles
       ->search()
-      ->sort('date','desc')
+      ->sort('date', 'desc')
       ->fetch();
 ```
 
@@ -307,7 +314,7 @@ $olive->articles
 // Get the 10 newest articles
 $olive->articles
       ->search()
-      ->sort('date','desc')
+      ->sort('date', 'desc')
       ->limit(10)
       ->fetch();
 ```
@@ -320,7 +327,7 @@ Skipping results is useful when using `limit()` for pagination.
 // Get articles for the page 3
 $olive->articles
       ->search()
-      ->sort('date','desc')
+      ->sort('date', 'desc')
       ->limit(10)
       ->skip(20)
       ->fetch();
@@ -332,7 +339,7 @@ For ease of use, you can directly count how many results that a search should re
 
 ```php
 $olive->articles
-      ->search('date','greater',time()-1209600)
+      ->search('date', 'greater', time() - 1209600)
       ->count();
 ```
 
@@ -343,15 +350,15 @@ To simplify your models and have a nice object-oriented API, you can extend `Oli
 
 ```php
 class MyUsersModel extends Olive\Model{
-
     // 'singular' and 'plural' properties are used in calls (see the method below)
     protected $singular='user';
     protected $plural='users';
+	
     // Define the data container name (AKA table or collection name)
     protected $data_container='users';
+	
     // Define the primary key name
-    protected $primary_key='id';
-
+    protected $primary_key='_id';
 }
 ```
 
@@ -371,32 +378,32 @@ Here's the exhaustive list of the methods you can natively call (replace `singul
 - `insert<Plural>($data)` : insert several rows (ex : `insertUsers($data)`)
 - `add<Singular>($data)` : alias of `insert<Singular>`
 - `add<Plural>($data)` : alias of `insert<Plural>`
-- `get<Singular>($id,$fields)` : get a row by its id (ex : `getUser(72)`)
-- `get<Singular>($search,$fields)` : get a row by a specific search  (ex : `getUser(array('email'=>'account@email.com'))`)
+- `get<Singular>($id, $fields)` : get a row by its id (ex : `getUser(72)`)
+- `get<Singular>($search, $fields)` : get a row by a specific search  (ex : `getUser(array('email'=>'account@email.com'))`)
 - `get<Singular><Field>($id)` : get a field by id (ex : `getUserEmail(72)`)
-- `get<Singular><Field>($search)` : get a field by a specific search (ex : `getUserEmail(array('name'=>'Thomas'))`)
-- `get<Singular>By<SearchField>($value,$fields)` : get at row by a field (ex : `getUserByName('Thomas')`)
+- `get<Singular><Field>($search)` : get a field by a specific search (ex : `getUserEmail(array('name' => 'Thomas'))`)
+- `get<Singular>By<SearchField>($value, $fields)` : get at row by a field (ex : `getUserByName('Thomas')`)
 - `get<Singular><Field>By<SearchField>($value)` : get a field by a search on another field (ex : `getUserEmailByName('Thomas')`)
-- `get<Plural>($search,$fields)` : search for several rows (ex : `getUsers(array('status'=>'admin'))`)
-- `get<Plural><Field>($search)` : search for several rows but retrieve one field (ex : `getUsersEmail(array('status'=>'admin'))`)
-- `get<Plural>By<SearchField>($value,$fields)` : search for several rows by a specific field (ex : `getUsersByStatus('admin')`)
+- `get<Plural>($search, $fields)` : search for several rows (ex : `getUsers(array('status' => 'admin'))`)
+- `get<Plural><Field>($search)` : search for several rows but retrieve one field (ex : `getUsersEmail(array('status' => 'admin'))`)
+- `get<Plural>By<SearchField>($value, $fields)` : search for several rows by a specific field (ex : `getUsersByStatus('admin')`)
 - `get<Plural><Field>By<SearchField>($value)` : search for several rows by a specific field, and return one field per row (ex : `getUsersEmailByStatus('admin')`)
-- `update<Singular>($id,$data)` : update an ID specific element (ex : `updateUser(72,$data)`)
-- `update<Singular>($search,$data)` : update an element with a search (ex : `updateUser(array('id'=>72),$data)`)
-- `update<Singular><Field>($id,$value)` : update a specific field of an element (ex : `updateUserName(72,'Pierre')`)
-- `update<Singular><Field>($search,$value)` : update a specific field of an element with a search (ex : `updateUserName(array('id'=>72),'Pierre')`)
-- `update<Singular>By<SearchField>($value,$data)` : update an element by searching a field (ex : `updateUserById(72,$data)`)
-- `update<Singular><Field>By<SearchField>($search_value,$field_value)` : update the field of an element by searching another field (ex : `updateUserNameById(72,'Pierre')`)
-- `update<Plural>($search,$data)` : update several elements (ex : `updateUsers(array('name'=>'Pierre'),$data)`)
-- `update<Plural><Field>($search,$value)` : update several element fields (ex : `updateUsersName(array('name'=>'Pierre'),'Jacques')`)
-- `update<Plural>By<SearchField>($value,$data)` : update several elements by searching a field (ex : `updateUsersByName('Pierre',$data)`)
-- `update<Plural><Field>By<SearchField>($search_value,$field_value)` : update several elements field by searching another field (ex : `updateUsersNameByName('Pierre','Jacques')`)
+- `update<Singular>($id, $data)` : update an ID specific element (ex : `updateUser(72, $data)`)
+- `update<Singular>($search, $data)` : update an element with a search (ex : `updateUser(array('_id' => 72), $data)`)
+- `update<Singular><Field>($id, $value)` : update a specific field of an element (ex : `updateUserName(72,'Pierre')`)
+- `update<Singular><Field>($search, $value)` : update a specific field of an element with a search (ex : `updateUserName(array('_id' => 72), 'Pierre')`)
+- `update<Singular>By<SearchField>($value, $data)` : update an element by searching a field (ex : `updateUserById(72, $data)`)
+- `update<Singular><Field>By<SearchField>($search_value, $field_value)` : update the field of an element by searching another field (ex : `updateUserNameById(72, 'Pierre')`)
+- `update<Plural>($search, $data)` : update several elements (ex : `updateUsers(array('name' => 'Pierre'), $data)`)
+- `update<Plural><Field>($search, $value)` : update several element fields (ex : `updateUsersName(array('name' => 'Pierre'), 'Jacques')`)
+- `update<Plural>By<SearchField>($value, $data)` : update several elements by searching a field (ex : `updateUsersByName('Pierre', $data)`)
+- `update<Plural><Field>By<SearchField>($search_value, $field_value)` : update several elements field by searching another field (ex : `updateUsersNameByName('Pierre', 'Jacques')`)
 - `save<Singular>($data)` : save data (ex : `saveUser($data)`)
 - `set<Singular>($data)` : alias of `save<Singular>`
 - `remove<Singular>($id)` : remove an element (ex : `removeUser(72)`)
-- `remove<Singular>($search)` : remove an element by search (ex : `removeUser(array('id'=>72))`)
+- `remove<Singular>($search)` : remove an element by search (ex : `removeUser(array('_id' => 72))`)
 - `remove<Singular>By<SearchField>($value)` : remove an element by searching a field (ex : `removeUserByEmail('example@mail.com')`)
-- `remove<Plural>($search)` : remove several elements (ex : `removeUsers(array('name'=>'Pierre'))`)
+- `remove<Plural>($search)` : remove several elements (ex : `removeUsers(array('name' => 'Pierre'))`)
 - `remove<Plural>By<SearchField>($value)` : remove several elements by searching a field  (ex : `removeUsersByName('Pierre')`)
 - `delete<Singular>($id)` : alias of `remove<Singular>`
 - `delete<Singular>($search)` : alias of `remove<Singular>`
@@ -417,9 +424,9 @@ $userModel->removeUsers(array(
 The `$fields` parameter is also an associative array that lists the fields to retrieve and maps aliases :
 
 ```php
-// Get an user with the following fields : 'id', 'email', 'date' (alias of 'user_creation') and 'text' (alias of 'profile_text')
+// Get an user with the following fields : '_id', 'email', 'date' (alias of 'user_creation') and 'text' (alias of 'profile_text')
 $userModel->getUser($id,array(
-    'id',
+    '_id',
     'email',
     'user_creation' => 'date'
     'profile_text' => 'text'
@@ -431,10 +438,15 @@ Advanced use
 
 ```php
 // Get table/collection names
-$names=$olive->getDataContainersNames();
+$names = $olive->getDataContainerNames();
 
 // Get database object (like PDO, MongoClient, ...)
-$driver=$olive->getDriver();
+$driver = $olive->getDriver();
+
+// Verify adapter support
+if(Olive\Mysql::isSupported()) {
+	// MySQL is currently supported in the PHP environment
+}
 ```
 
 Last notes

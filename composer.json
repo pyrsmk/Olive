@@ -1,6 +1,6 @@
 {
 	"name": "pyrsmk/olive",
-	"description": "The one API database library",
+	"description": "One API to rule them all",
 	"keywords": [
 		"database",
 		"sql",
@@ -29,9 +29,7 @@
 		"homepage": "http://dreamysource.fr"
 	}],
 	"require": {
-		"php": ">=5.3.0",
-		"ext-pdo": "*",
-		"ext-mongodb": "*"
+		"php": ">=5.3.0"
 	},
 	"autoload": {
 		"psr-0" : {

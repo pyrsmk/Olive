@@ -2,26 +2,23 @@
 
 namespace Olive;
 
-use Olive\AbstractDatabase;
 use Olive\Mongodb\Collection;
-use Olive\Exception;
-use Olive\Exception\DatabaseError;
 
 /*
 	MongoDB adapter
 */
 class Mongodb extends AbstractDatabase{
-
+	
 	/*
-		Connect to the server and select a database
-
+		Initialize the database
+		
 		Parameters
 			string $name	: database name
 			array $options	: database options
 	*/
-	public function __construct($name,array $options=array()){
-		if(!($hosts=(array)$options['hosts'])){
-			$hosts['localhost']=27017;
+	protected function _initDatabase($name, $options) {
+		if(!isset($options['hosts'])){
+			$hosts = array('localhost' => 27017);
 		}
 		try{
 			// Generate host list
@@ -42,8 +39,18 @@ class Mongodb extends AbstractDatabase{
 			$this->driver=$mongo->$name;
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
+	}
+	
+	/*
+		Verify if the adapter is supported by the environment
+		
+		Return
+			boolean
+	*/
+	static public function isSupported() {
+		return extension_loaded('mongo');
 	}
 
 	/*

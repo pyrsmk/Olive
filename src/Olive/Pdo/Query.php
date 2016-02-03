@@ -1,8 +1,10 @@
 <?php
 
-namespace Olive\Pdo\Query;
+namespace Olive\Pdo;
 
+use Olive\Pdo as Database;
 use Olive\AbstractQuery;
+use Olive\Exception;
 
 /*
 	PDO query
@@ -15,6 +17,18 @@ class Query extends AbstractQuery{
 	*/
 	protected $cursor;
 	protected $next;
+
+	/*
+		Constructor
+
+		Parameters
+			Olive\AbstractDatabase $database
+			mixed $name
+	*/
+	public function __construct(Database $database,$name){
+		parent::__construct($database, $name);
+		$this->query['from'] = array();
+	}
 
 	/*
 		Update rows
@@ -30,7 +44,6 @@ class Query extends AbstractQuery{
 					 (array)func_get_arg(1):
 					 array();
 			// Prepare markers
-			$data=$this->database->prepareData($data);
 			$set_values=array();
 			$markers=array();
 			foreach($data as $name=>$value){
@@ -40,7 +53,7 @@ class Query extends AbstractQuery{
 			}
 			// Prepare query
 			$q=$this->_prepareQuery();
-			$query='UPDATE '.$this->database->escape($this->name).
+			$query='UPDATE '.$this->database->escape($this->database->getNamespace().$this->name).
 				   ' SET '.implode(',',$markers).' '.$q['clauses']['join'].' '.$q['clauses']['where'];
 			$data=array_merge($set_values,$q['values']);
 			// Update rows
@@ -48,7 +61,7 @@ class Query extends AbstractQuery{
 			$statement->execute($data);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 	}
 
@@ -66,14 +79,30 @@ class Query extends AbstractQuery{
 					 array();
 			// Prepare request
 			$q=$this->_prepareQuery();
-			$query='DELETE FROM '.$this->database->escape($this->name).' '.$q['clauses']['join'].' '.$q['clauses']['where'];
+			$query = 'DELETE FROM '.$this->database->escape($this->database->getNamespace().$this->name).' '.
+					$q['clauses']['join'].' '.$q['clauses']['where'];
 			// Remove row
 			$statement=$this->database->getDriver()->prepare($query,$options);
 			$statement->execute($q['values']);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
+	}
+	
+	/*
+		Add table alias
+		
+		Parameters
+			string $table
+			string $alias
+		
+		Return
+			Olive\Pdo\Query
+	*/
+	public function from($table, $alias) {
+		$this->query['from'][(string)$alias] = (string)$table;
+		return $this;
 	}
 
 	/*
@@ -94,12 +123,12 @@ class Query extends AbstractQuery{
 		$this->_initCursor($options);
 		// Get data
 		try{
-			$results=$this->cursor->fetchAll(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_CLASS);
+			$results = $this->cursor->fetchAll(\PDO::FETCH_ASSOC);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
-		return $this->database->prepareData($results);
+		return $results;
 	}
 
 	/*
@@ -143,7 +172,7 @@ class Query extends AbstractQuery{
 		// Fetch result
 		$result=$this->fetchOne($options);
 		if(count($result)){
-			return $result[0];
+			return current($result);
 		}
 		else{
 			return null;
@@ -156,8 +185,8 @@ class Query extends AbstractQuery{
 		Return
 			integer
 	*/
-	public function count(){
-		$this->request['select']=array('COUNT(*)');
+	public function count() {
+		$this->select('COUNT(*)');
 		return $this->fetchFirst();
 	}
 
@@ -179,15 +208,15 @@ class Query extends AbstractQuery{
 				   $q['clauses']['from'].' '.
 				   $q['clauses']['join'].' '.
 				   $q['clauses']['where'].' '.
-				   $q['clauses']['limit'].' '.
-				   $q['clauses']['orderby'];
+				   $q['clauses']['orderby'].' '.
+				   $q['clauses']['limit'];
 			// Execute request
 			$cursor=$this->database->getDriver()->prepare($query,$options);
 			$cursor->execute($q['values']);
 			$this->cursor=$cursor;
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 	}
 
@@ -199,13 +228,20 @@ class Query extends AbstractQuery{
 	*/
 	protected function _prepareQuery(){
 		// Prepare
-		$clauses=array();
+		$clauses=array(
+			'select' => '',
+			'from' => '',
+			'join' => '',
+			'where' => '',
+			'limit' => '',
+			'orderby' => ''
+		);
 		$values=array();
 		$namespace=$this->database->getNamespace();
 		// Generate SELECT clause
 		$selects=array();
-		if($this->request['select']){
-			foreach($this->request['select'] as $select){
+		if($this->query['select']){
+			foreach($this->query['select'] as $select){
 				$s=$this->database->escape($select['field']);
 				if($select['alias']){
 					$s.=' AS '.$this->database->escape($select['alias']);
@@ -218,53 +254,72 @@ class Query extends AbstractQuery{
 		}
 		$clauses['select']='SELECT '.implode(',',$selects);
 		// Generate FORM clause
-		$clauses['from']='FROM '.$this->database->escape($this->name);
+		$clauses['from'] = '';
+		if(count($this->query['from'])) {
+			$clauses['from'] = 'FROM '.implode(', ', array_map(
+				function ($table, $alias) use($namespace) {
+					return sprintf(
+						"%s AS %s",
+						$this->database->escape($namespace.$table),
+						$this->database->escape($namespace.$alias)
+					);
+				},
+				$this->query['from'],
+				array_keys($this->query['from'])
+			));
+		}
+		if(!in_array($this->name, $this->query['from'])) {
+			$clauses['from'] .= $clauses['from'] ? ', ' : 'FROM ';
+			$clauses['from'] .= $this->database->escape($namespace.$this->name);
+		}
 		// Generate JOIN clauses
-		if($this->request['join']){
+		if($this->query['join']){
 			$joins=array();
-			$joined=array($this->name);
-			foreach($this->request['join'] as $join){
+			$joined=array($namespace.$this->name);
+			foreach($this->query['join'] as $join){
 				// Prepare join variables
 				if(in_array($join['container1'],$joined)){
-					$field1=$join['field1'];
-					$table2=$join['container2'];
-					$field2=$join['field2'];
+					$field1 = $join['field1'];
+					$table1 = $join['container1'];
+					$table2 = $join['container2'];
+					$field2 = $join['field2'];
 				}
 				else{
-					$field1=$join['field2'];
-					$table2=$join['container1'];
-					$field2=$join['field1'];
+					$field1 = $join['field2'];
+					$table1 = $join['container2'];
+					$table2 = $join['container1'];
+					$field2 = $join['field1'];
 				}
 				$joined[]=$table2;
 				// Generate clause
-				$joins[]='LEFT JOIN '.$this->database->escape($namespace.$table2).' ON '.
-						 $this->database->escape($namespace.$table1).'.'.$this->database->escape($namespace.$field1).'='.
-						 $this->database->escape($namespace.$table2).'.'.$this->database->escape($namespace.$field2);
+				$joins[] = 'LEFT JOIN '.$this->database->escape($namespace.$table1).' ON '.
+						 $this->database->escape($namespace.$table1).'.'.$this->database->escape($field1).'='.
+						 $this->database->escape($namespace.$table2).'.'.$this->database->escape($field2);
 			}
 			$clauses['join']=implode(' ',$joins);
 		}
 		// Generate WHERE clause
-		if($this->request['search']){
-			$where=$this->_prepareWhere($this->request['search']);
+		if($this->query['search']){
+			$where=$this->_prepareWhere($this->query['search']);
 			$clauses['where']='WHERE ('.$where['query'].')';
 			$values=$where['values'];
 		}
 		// Generate ORDER BY clause
-		if($this->request['sort']){
+		if($this->query['sort']){
 			$orderby=array();
-			foreach($this->request['sort'] as $sort){
+			foreach($this->query['sort'] as $sort){
 				$orderby[]=$this->database->escape($sort['field']).' '.
 						   ($sort['order']=='asc'?'ASC':'DESC');
 			}
 			$clauses['orderby']='ORDER BY '.implode(',',$orderby);
 		}
 		// Generate LIMIT clause
-		if($this->request['limit'] || $this->request['skip']){
-			if($this->request['limit']){
-				$limit=(int)$this->request['skip'].','.$this->request['limit'];
+		if($this->query['limit'] || $this->query['skip']){
+			if($this->query['limit']){
+				$limit=$this->query['skip'].','.$this->query['limit'];
 			}
 			else{
-				$limit=$this->request['skip'].',9999999999';
+				$limit=$this->query['skip'].',9999999999';
 			}
 			$clauses['limit']='LIMIT '.$limit;
 		}
@@ -289,7 +344,6 @@ class Query extends AbstractQuery{
 			$ors=array();
 			// Browse OR searches
 			foreach($or_searches as $search){
-				$value='';
 				// Translate operator
 				switch($search['operator']){
 					case 'is':      	$operator='='; break;
@@ -305,28 +359,26 @@ class Query extends AbstractQuery{
 				}
 				// Prepare IN/NOT IN value
 				if($search['operator']=='in' || $search['operator']=='not in'){
-					$markers=array();
 					foreach($search['value'] as $v){
-						$marker=$this->database->getMarker();
-						$markers[]=':'.$marker;
-						$values[$marker]=$v;
+						$marker = $this->database->getMarker();
+						$values[':'.$marker] = $v;
 					}
-					$value.='('.implode(',',$markers).')';
+					$value = '('.implode(',', array_keys($values)).')';
 				}
 				// Prepare basic value
 				else{
-					$marker=$this->database->getMarker();
-					$value.=':'.$marker;
-					$values[$marker]=$value;
+					$marker = $this->database->getMarker();
+					$value = ':'.$marker;
+					$values[$value] = $search['value'];
 				}
 				// Add OR clause
-				$ors[]=$this->database->escape($search['field']).$operator.$value;
+				$ors[] = $this->database->escape($search['field']).$operator.$value;
 			}
 			// Add AND clause
-			$ands[]='('.implode(') OR (',$ors).')';
+			$ands[]='('.implode(') OR (', $ors).')';
 		}
 		return array(
-			'query' => '('.implode(') AND (',$ands).')',
+			'query' => '('.implode(') AND (', $ands).')',
 			'values' => $values
 		);
 	}

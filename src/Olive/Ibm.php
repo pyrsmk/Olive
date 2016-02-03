@@ -2,8 +2,6 @@
 
 namespace Olive;
 
-use Olive\Pdo;
-
 /*
 	IBM adapter
 */
@@ -23,6 +21,16 @@ class Ibm extends Pdo{
 		else{
 			return "ibm:database=$name;".$this->_concatenateOptions($options);
 		}
+	}
+	
+	/*
+		Verify if the adapter is supported by the environment
+		
+		Return
+			boolean
+	*/
+	static public function isSupported() {
+		return extension_loaded('pdo') && in_array('ibm', \PDO::getAvailableDrivers());
 	}
 
 }

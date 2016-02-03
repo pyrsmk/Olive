@@ -1,8 +1,10 @@
 <?php
 
-namespace Olive\Mongodb\Query;
+namespace Olive\Mongodb;
 
+use Olive\Mongodb as Database;
 use Olive\AbstractQuery;
+use Olive\Exception;
 
 /*
 	MongoDB query
@@ -24,8 +26,8 @@ class Query extends AbstractQuery{
 			mixed $name
 	*/
 	public function __construct(Database $database,$name){
-		parent::__construct($database,$name);
-		$this->collection=$this->database->getDriver()->$name;
+		parent::__construct($database, $name);
+		$this->collection=$this->database->getDriver()->{$this->database->getNamespace().$name};
 	}
 
 	/*
@@ -47,13 +49,13 @@ class Query extends AbstractQuery{
 		// Update documents
 		try{
 			$this->collection->update(
-				$this->_prepareQuery($this->request['search']),
+				$this->_prepareQuery($this->query['search']),
 				array('$set'=>(array)$document),
 				$options
 			);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 	}
 
@@ -71,12 +73,12 @@ class Query extends AbstractQuery{
 		// Remove document
 		try{
 			$this->collection->remove(
-				$this->_prepareQuery($this->request['search']),
+				$this->_prepareQuery($this->query['search']),
 				$options
 			);
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 	}
 
@@ -91,7 +93,7 @@ class Query extends AbstractQuery{
 		$this->_initCursor();
 		$results=iterator_to_array($this->cursor);
 		// Resolve aliases
-		$results=$this->_resolveAliases($this->name,$results);
+		$results=$this->_resolveAliases($this->database->getNamespace().$this->name,$results);
 		// Join collections
 		$results=$this->_joinCollectionsTo($results);
 		// Format IDs
@@ -113,7 +115,7 @@ class Query extends AbstractQuery{
 		$this->cursor->rewind();
 		$result=$this->cursor->current();
 		// Resolve aliases
-		$results=$this->_resolveAliases($this->name,array($result));
+		$results=$this->_resolveAliases($this->database->getNamespace().$this->name,array($result));
 		// Join collections
 		$results=$this->_joinCollectionsTo($results);
 		$result=$results[0];
@@ -156,20 +158,20 @@ class Query extends AbstractQuery{
 		try{
 			// Prepare projection
 			$projection=array();
-			foreach($this->request['select'] as $select){
+			foreach($this->query['select'] as $select){
 				if(strpos($select['field'],'.')===false){
 					$projection[$select['field']]=1;
 				}
 			}
 			// Execute query
 			$cursor=$this->collection->find(
-				$this->_prepareQuery($this->request['search']),
+				$this->_prepareQuery($this->query['search']),
 				$projection
 			);
 			// Sort
-			if($this->request['sort']){
+			if($this->query['sort']){
 				$sorts=array();
-				foreach($this->request['sort'] as $sort){
+				foreach($this->query['sort'] as $sort){
 					if($sort['order']=='asc'){
 						$order=1;
 					}
@@ -181,17 +183,17 @@ class Query extends AbstractQuery{
 				$cursor->sort($sorts);
 			}
 			// Limit/skip
-			if($this->request['limit']){
-				$cursor->limit($this->request['limit']);
+			if($this->query['limit']){
+				$cursor->limit($this->query['limit']);
 			}
-			if($this->request['skip']){
-				$cursor->skip($this->request['skip']);
+			if($this->query['skip']){
+				$cursor->skip($this->query['skip']);
 			}
 			// Save cursor
 			$this->cursor=$cursor;
 		}
 		catch(\Exception $e){
-			throw new DatabaseError($e->getMessage());
+			throw new Exception($e->getMessage());
 		}
 	}
 
@@ -297,8 +299,8 @@ class Query extends AbstractQuery{
 			array
 	*/
 	protected function _joinCollectionsTo($results){
-		$joined=array($this->name);
-		foreach($this->request['join'] as $join){
+		$joined=array($this->database->getNamespace().$this->name);
+		foreach($this->query['join'] as $join){
 			// Prepare join variables
 			if(in_array($join['container1'],$joined)){
 				$field1=$join['field1'];
@@ -365,13 +367,13 @@ class Query extends AbstractQuery{
 			}
 		};
 		// Browse aliases
-		foreach($this->request['select'] as $select){
+		foreach($this->query['select'] as $select){
 			if(!$select['alias']){
 				continue;
 			}
 			// Inner collection
 			if(strpos($select['field'],'.')===false){
-				if($collection==$this->name){
+				if($collection==$this->database->getNamespace().$this->name){
 					$resolve($select['field'],$select['alias'],$results);
 				}
 			}

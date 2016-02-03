@@ -1,0 +1,7 @@
+CREATE TABLE `olive_articles`(
+	`_id` INT PRIMARY KEY AUTO_INCREMENT,
+	`tag` VARCHAR(255) NOT NULL,
+	`date` INT NOT NULL,
+	`title` VARCHAR(255) NOT NULL,
+	`user_id` INT NOT NULL
+);
