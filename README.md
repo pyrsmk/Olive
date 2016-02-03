@@ -1,4 +1,4 @@
-Olive 0.24.0
+Olive 0.25.0
 ============
 
 Olive is a database library that aims to handle several databases with one simple API. It is designed for small to medium projects that don't need to be highly optimized because the API just supports the common tasks.
@@ -236,15 +236,15 @@ $title=$olive->members
              ->fetch();
 ```
 
-Let's get a further look how searching works. In fact, each call to `search()` will be concatenated with `AND` operators. But we sometimes need to add an `OR` clause to the query. It is obtained by calling the `or()` method :
+Let's get a further look how searching works. In fact, each call to `search()` will be concatenated with `AND` operators. But we sometimes need to add an `OR` clause to the query. It is obtained by calling the `orSearch()` method :
 
 ```php
 $olive->articles->search('author_id', 'is', '@pyrsmk')
-                ->or('author_id', 'is', '@dreamysource')
-                ->or('author_id', 'is', '@4lbl');
+                ->orSearch('author_id', 'is', '@dreamysource')
+                ->orSearch('author_id', 'is', '@4lbl');
 ```
 
-All `or()` clauses will be appended to the previous search.
+All `orSearch()` clauses will be appended to the previous search.
 
 ### Select fields & set aliases
 

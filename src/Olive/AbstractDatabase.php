@@ -7,7 +7,7 @@ use ArrayAccess;
 /*
 	Core database class
 */
-abstract class AbstractDatabase implements ArrayAccess{
+abstract class AbstractDatabase implements ArrayAccess, DatabaseInterface {
 
 	/*
 		object $driver		: the database driver
@@ -38,14 +38,6 @@ abstract class AbstractDatabase implements ArrayAccess{
 			array $options	: database options
 	*/
 	abstract protected function _initDatabase($name, $options);
-	
-	/*
-		Verify if the adapter is supported by the environment
-		
-		Return
-			boolean
-	*/
-	abstract static public function isSupported();
 
 	/*
 		Return the database driver

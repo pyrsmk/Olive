@@ -131,14 +131,14 @@ abstract class AbstractQuery{
 		Return
 			Olive\AbstractQuery
 	*/
-	public function or(){
+	public function orSearch(){
 		// Create search
 		call_user_func_array(array($this,'search'),func_get_args());
 		$search=array_pop($this->query['search']);
 		$search=$search[0];
 		// Verify if there's at least a non-empty registered search
 		if(!count($this->query['search']) || !end($this->query['search'])){
-			throw new Exception("There's no valid registered search, cannot call 'or()'");
+			throw new Exception("There's no valid registered search, cannot call 'searchOr()'");
 		}
 		// Add the OR search
 		$this->query['search'][key($this->query['search'])][]=$search;
