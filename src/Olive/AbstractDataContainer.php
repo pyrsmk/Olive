@@ -37,6 +37,16 @@ abstract class AbstractDataContainer{
 	abstract protected function _getNewQuery();
 
 	/*
+		Return a new query object
+
+		Return
+			Olive\AbstractQuery
+	*/
+	public function query() {
+		return $this->_getNewQuery();
+	}
+
+	/*
 		Create a new query and add search parameters
 
 		Parameters 1
