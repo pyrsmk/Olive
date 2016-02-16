@@ -450,12 +450,13 @@ abstract class Model{
 	protected function _prepareSelect($query, $select) {
 		foreach((array)$select as $field => $alias) {
 			if(is_string($field)) {
-				return $query->select($field, $alias);
+				$query->select($field, $alias);
 			}
 			else {
-				return $query->select($alias);
+				$query->select($alias);
 			}
 		}
+		return $query;
 	}
 
 	/*
