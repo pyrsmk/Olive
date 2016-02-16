@@ -78,11 +78,7 @@ class Query extends AbstractQuery {
 	public function fetch(){
 		// Get data
 		$this->_initCursor();
-		$results=iterator_to_array($this->cursor);
-		// Format
-		foreach($results as &$result) {
-			$result = (array)$result;
-		}
+		$results=$this->_formatResults(iterator_to_array($this->cursor));
 		// Resolve aliases
 		$results=$this->_resolveAliases($this->database->getNamespace().$this->name,$results);
 		// Join collections
@@ -104,7 +100,7 @@ class Query extends AbstractQuery {
 		// Get data
 		$this->_initCursor();
 		$this->cursor->rewind();
-		$result=(array)$this->cursor->current();
+		$result=$this->_formatResults($this->cursor->current());
 		// Resolve aliases
 		$results=$this->_resolveAliases($this->database->getNamespace().$this->name,array($result));
 		// Join collections
@@ -371,6 +367,26 @@ class Query extends AbstractQuery {
 				list($coll,$field)=explode('.',$select['field']);
 				if($coll==$collection){
 					$resolve($field,$select['alias'],$results);
+				}
+			}
+		}
+		return $results;
+	}
+	
+	/*
+		Format results
+		
+		Parameters
+			mixed $results
+		
+		Return
+			mixed
+	*/
+	protected function _formatResults($results) {
+		if(is_array($results)) {
+			foreach($results as &$result) {
+				if(is_array($result) || (is_object($result) && $result instanceof \stdClass)) {
+					$result = $this->_formatResults((array)$result);
 				}
 			}
 		}
