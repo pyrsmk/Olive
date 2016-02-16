@@ -1,9 +1,9 @@
-Olive 0.25.4
+Olive 0.26.0
 ============
 
 Olive is a database library that aims to handle several databases with one simple API. It is designed for small to medium projects that don't need to be highly optimized because the API just supports the common tasks.
 
-This project is a proof-of-concept that can be useful for many developers.
+This project is a proof-of-concept and should be used as is.
 
 Even if you can switch between different database types (like MySQL and MongoDB) with the same project and the same data structure, I __do not__ encourage anyone to do it. Each database system has its own pros and cons and you should choose wisely what to use for your needs. Moreover, some methods on the API can be greedy, like `join()` with MongoDB which runs one additional request per join to retrieve data.
 
