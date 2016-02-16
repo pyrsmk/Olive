@@ -173,12 +173,11 @@ abstract class Model{
 		Return
 			boolean
 	*/
-	protected function _oneExists($search){
+	protected function _oneExists($search) {
 		$this->_verifyOneSearch($search);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareOneSearch($request,$search);
-		return (bool)$request->select($this->primary)
-							 ->fetchOne();
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareOneSearch($container, $search);
+		return (bool)$query->select($this->primary_key)->fetchOne();
 	}
 
 	/*
@@ -190,12 +189,11 @@ abstract class Model{
 		Return
 			boolean
 	*/
-	protected function _severalExist($search){
+	protected function _severalExist($search) {
 		$this->_verifySeveralSearch($search);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareSeveralSearch($request,$search);
-		return (bool)$request->select($this->primary)
-							 ->fetchOne();
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareSeveralSearch($container, $search);
+		return (bool)$query->select($this->primary_key)->fetchOne();
 	}
 
 	/*
@@ -207,11 +205,11 @@ abstract class Model{
 		Return
 			integer
 	*/
-	protected function _count($search){
+	protected function _count($search) {
 		$this->_verifySeveralSearch($search);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareSearch($request,$search);
-		return $request->count();
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareSearch($container,$search);
+		return $query->count();
 	}
 
 	/*
@@ -224,16 +222,16 @@ abstract class Model{
 		Return
 			array
 	*/
-	protected function _getOne($search,$select){
+	protected function _getOne($search, $select) {
 		$this->_verifyOneSearch($search);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareOneSearch($request,$search);
-		$this->_prepareSelect($request,$select);
-		if(count((array)$select)==1){
-			return $request->fetchFirst();
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareOneSearch($container, $search);
+		$query = $this->_prepareSelect($query, $select);
+		if(count((array)$select) == 1) {
+			return $query->fetchFirst();
 		}
 		else{
-			return $request->fetchOne();
+			return $query->fetchOne();
 		}
 	}
 
@@ -247,12 +245,12 @@ abstract class Model{
 		Return
 			array
 	*/
-	protected function _getSeveral($search,$select){
+	protected function _getSeveral($search, $select) {
 		$this->_verifySeveralSearch($search);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareSeveralSearch($request,$search);
-		$this->_prepareSelect($request,$select);
-		return $request->fetch();
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareSeveralSearch($container, $search);
+		$query = $this->_prepareSelect($query, $select);
+		return $query->fetch();
 	}
 
 	/*
@@ -264,11 +262,11 @@ abstract class Model{
 		Return
 			mixed
 	*/
-	protected function _insertOne($data){
+	protected function _insertOne($data) {
 		$this->_verifyData($data);
-		$data=$this->_validateFields($data);
-		$request=$this->database->getDataContainer($this->container);
-		return $request->insert($data);
+		$data = $this->_validateFields($data);
+		$container = $this->database->getDataContainer($this->data_container);
+		return $container->insert($data);
 	}
 
 	/*
@@ -280,11 +278,11 @@ abstract class Model{
 		Return
 			array
 	*/
-	protected function _insertSeveral($data){
+	protected function _insertSeveral($data) {
 		$this->_verifyData($data);
-		$ids=array();
-		foreach($data as $row){
-			$ids[]=$this->_insertOne((array)$row);
+		$ids = array();
+		foreach($data as $row) {
+			$ids[] = $this->_insertOne((array)$row);
 		}
 		return $ids;
 	}
@@ -299,13 +297,13 @@ abstract class Model{
 		Return
 			integer
 	*/
-	protected function _updateOne($search,$data){
+	protected function _updateOne($search, $data) {
 		$this->_verifyOneSearch($search);
 		$this->_verifyData($data);
-		$data=$this->_validateFields($data);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareOneSearch($request,$search);
-		return $request->update($data);
+		$data = $this->_validateFields($data);
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareOneSearch($container, $search);
+		return $query->update($data);
 	}
 
 	/*
@@ -321,10 +319,10 @@ abstract class Model{
 	protected function _updateSeveral($search,$data){
 		$this->_verifySeveralSearch($search);
 		$this->_verifyData($data);
-		$data=$this->_validateFields($data);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareSeveralSearch($request,$search);
-		return $request->update($data);
+		$data = $this->_validateFields($data);
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareSeveralSearch($container, $search);
+		return $query->update($data);
 	}
 
 	/*
@@ -336,9 +334,9 @@ abstract class Model{
 		Return
 			integer
 	*/
-	protected function _saveOne($data){
+	protected function _saveOne($data) {
 		$this->_verifyData($data);
-		return $this->database->getDataContainer($this->container)->save($this->_validateFields($data));
+		return $this->database->getDataContainer($this->data_container)->save($this->_validateFields($data));
 	}
 
 	/*
@@ -352,9 +350,9 @@ abstract class Model{
 	*/
 	protected function _removeOne($search){
 		$this->_verifyOneSearch($search);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareOneSearch($request,$search);
-		return $request->remove();
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareOneSearch($container, $search);
+		return $query->remove();
 	}
 
 	/*
@@ -366,32 +364,35 @@ abstract class Model{
 		Return
 			integer
 	*/
-	protected function _removeSeveral($search){
+	protected function _removeSeveral($search) {
 		$this->_verifySeveralSearch($search);
-		$request=$this->database->getDataContainer($this->container);
-		$this->_prepareSeveralSearch($request,$search);
-		return $request->remove();
+		$container = $this->database->getDataContainer($this->data_container);
+		$query = $this->_prepareSeveralSearch($container,$search);
+		return $query->remove();
 	}
 
 	/*
 		Prepare search clauses
 
 		Parameters
-			Olive\Container $request
+			Olive\AbstractDataContainer $container
 			array $search
+		
+		Return
+			Olive\AbstractQuery
 	*/
-	protected function _prepareSearch($request,$search){
-		$search=(array)$search;
-		if(!$search){
-			$request->search();
+	protected function _prepareSearch($container, $search) {
+		$search = (array)$search;
+		if(!$search) {
+			return $container->search();
 		}
-		else{
-			foreach($search as $field=>$value){
-				if(is_array($value)){
-					$request->search($field,'in',$value);
+		else {
+			foreach($search as $field => $value) {
+				if(is_array($value)) {
+					return $container->search($field, 'in', $value);
 				}
-				else{
-					$request->search($field,'is',$value);
+				else {
+					return $container->search($field, 'is', $value);
 				}
 			}
 		}
@@ -401,15 +402,18 @@ abstract class Model{
 		Prepare search clauses for one result
 
 		Parameters
-			Olive\Container $request
+			Olive\AbstractDataContainer $container
 			array $search
+		
+		Return
+			Olive\AbstractQuery
 	*/
-	protected function _prepareOneSearch($request,$search){
-		if(is_array($search)){
-			$this->_prepareSearch($request,$search);
+	protected function _prepareOneSearch($container, $search) {
+		if(is_array($search)) {
+			return $this->_prepareSearch($container, $search);
 		}
-		else{
-			$request->search($this->primary,'is',$search);
+		else {
+			return $container->search($this->primary_key, 'is', $search);
 		}
 	}
 
@@ -417,16 +421,19 @@ abstract class Model{
 		Prepare search clauses for several results
 
 		Parameters
-			Olive\Container $request
+			Olive\AbstractDataContainer $container
 			array $search
+		
+		Return
+			Olive\AbstractQuery
 	*/
-	protected function _prepareSeveralSearch($request,$search){
-		$search=(array)$search;
-		if(!$search || is_string(key($search))){
-			$this->_prepareSearch($request,$search);
+	protected function _prepareSeveralSearch($container, $search) {
+		$search = (array)$search;
+		if(!$search || is_string(key($search))) {
+			return $this->_prepareSearch($container, $search);
 		}
-		else{
-			$request->search($this->primary,'in',$search);
+		else {
+			return $container->search($this->primary_key, 'in', $search);
 		}
 	}
 
@@ -434,16 +441,19 @@ abstract class Model{
 		Prepare select clauses
 
 		Parameters
-			Olive\Container $request
+			Olive\AbstractQuery $query
 			array $select
+		
+		Return
+			Olive\AbstractQuery
 	*/
-	protected function _prepareSelect($request,$select){
-		foreach((array)$select as $field=>$alias){
-			if(is_string($field)){
-				$request->select($field,$alias);
+	protected function _prepareSelect($query, $select) {
+		foreach((array)$select as $field => $alias) {
+			if(is_string($field)) {
+				return $query->select($field, $alias);
 			}
-			else{
-				$request->select($alias);
+			else {
+				return $query->select($alias);
 			}
 		}
 	}
