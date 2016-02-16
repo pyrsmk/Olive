@@ -7,7 +7,7 @@ use Olive\Mongodb\Collection;
 /*
 	MongoDB adapter
 */
-class Mongodb extends AbstractDatabase{
+class Mongodb extends AbstractDatabase {
 	
 	/*
 		Initialize the database
@@ -17,28 +17,27 @@ class Mongodb extends AbstractDatabase{
 			array $options	: database options
 	*/
 	protected function _initDatabase($name, $options) {
-		if(!isset($options['hosts'])){
-			$hosts = array('localhost' => 27017);
+		$this->name = $name;
+		if(!isset($options['hosts'])) {
+			$options['hosts'] = array('localhost' => 27017);
 		}
 		try{
 			// Generate host list
-			$servers=array();
-			foreach($hosts as $host=>$port){
-				$servers[]=$host.':'.$port;
+			$servers = array();
+			foreach($options['hosts'] as $host => $port) {
+				$servers[] = $host.':'.$port;
 			}
 			unset($options['hosts']);
 			// Generate auth chain
-			if(($username=$options['username']) && ($password=$options['password'])){
-				$auth=urlencode(trim($username)).':'.urlencode(trim($password)).'@';
+			if($options['username'] && $options['password']) {
+				$auth = urlencode(trim($options['username'])).':'.urlencode(trim($options['password'])).'@';
 			}
 			unset($options['username']);
 			unset($options['password']);
 			// Instantiate driver
-			$mongo=new \MongoClient('mongodb://'.$auth.implode(',',$servers).'/'.urlencode($name),$options);
-			// Select database
-			$this->driver=$mongo->$name;
+			$this->driver = new \MongoDB\Driver\Manager('mongodb://'.$auth.implode(',',$servers).'/'.urlencode($name),$options);
 		}
-		catch(\Exception $e){
+		catch(\Exception $e) {
 			throw new Exception($e->getMessage());
 		}
 	}
@@ -50,7 +49,7 @@ class Mongodb extends AbstractDatabase{
 			boolean
 	*/
 	static public function isSupported() {
-		return extension_loaded('mongo');
+		return extension_loaded('mongodb');
 	}
 
 	/*
@@ -62,8 +61,8 @@ class Mongodb extends AbstractDatabase{
 		Return
 			Olive\Mongo\Collection
 	*/
-	public function getDataContainer($name){
-		return new Collection($this,$name);
+	public function getDataContainer($name) {
+		return new Collection($this, $this->name.'.'.$name);
 	}
 
 	/*
@@ -72,10 +71,14 @@ class Mongodb extends AbstractDatabase{
 		Return
 			array
 	*/
-	public function getDataContainerNames(){
-		$names=array();
-		foreach($this->driver->listCollections() as $collection){
-			$names[]=(string)$collection;
+	public function getDataContainerNames() {
+		$names = array();
+		$results = $this->driver->executeCommand(
+			$this->name,
+			new \MongoDB\Driver\Command(['listCollections' => 1])
+		);
+		foreach($results->toArray() as $collection) {
+			$names[] = $collection;
 		}
 		return $names;
 	}

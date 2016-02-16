@@ -9,26 +9,12 @@ use Olive\Exception;
 /*
 	MongoDB query
 */
-class Query extends AbstractQuery{
+class Query extends AbstractQuery {
 
 	/*
-		MongoCollection $collection : collection
-		MongoCursor $cursor         : result cursor
+		MongoCursor $cursor : result cursor
 	*/
-	protected $collection;
 	protected $cursor;
-
-	/*
-		Constructor
-
-		Parameters
-			Olive\Database $database
-			mixed $name
-	*/
-	public function __construct(Database $database,$name){
-		parent::__construct($database, $name);
-		$this->collection=$this->database->getDriver()->{$this->database->getNamespace().$name};
-	}
 
 	/*
 		Update a document
@@ -37,22 +23,24 @@ class Query extends AbstractQuery{
 			array $document : document values
 			array $options  : driver options
 	*/
-	public function update(array $document){
+	public function update(array $document) {
 		// Get options
 		$options=func_num_args()>1?
 				 (array)func_get_arg(1):
 				 array();
-		$options['multiple']=true;
+		$options['limit']=0;
 		if(array_key_exists('upsert',$options)){
 			unset($options['upsert']);
 		}
 		// Update documents
 		try{
-			$this->collection->update(
+			$bulk = new \MongoDB\Driver\BulkWrite;
+			$bulk->update(
 				$this->_prepareQuery($this->query['search']),
 				array('$set'=>(array)$document),
 				$options
 			);
+			$this->database->getDriver()->executeBulkWrite($this->name, $bulk);
 		}
 		catch(\Exception $e){
 			throw new Exception($e->getMessage());
@@ -72,10 +60,9 @@ class Query extends AbstractQuery{
 				 array();
 		// Remove document
 		try{
-			$this->collection->remove(
-				$this->_prepareQuery($this->query['search']),
-				$options
-			);
+			$bulk = new \MongoDB\Driver\BulkWrite;
+			$bulk->delete($this->_prepareQuery($this->query['search']), $options);
+			$this->database->getDriver()->executeBulkWrite($this->name, $bulk);
 		}
 		catch(\Exception $e){
 			throw new Exception($e->getMessage());
@@ -147,8 +134,7 @@ class Query extends AbstractQuery{
 	public function count(){
 		// Get data
 		$this->_initCursor();
-		$count=$this->cursor->count(true);
-		return $count;
+		return count($this->cursor->toArray());
 	}
 
 	/*
@@ -163,32 +149,25 @@ class Query extends AbstractQuery{
 					$projection[$select['field']]=1;
 				}
 			}
-			// Execute query
-			$cursor=$this->collection->find(
-				$this->_prepareQuery($this->query['search']),
-				$projection
-			);
-			// Sort
-			if($this->query['sort']){
-				$sorts=array();
-				foreach($this->query['sort'] as $sort){
-					if($sort['order']=='asc'){
-						$order=1;
-					}
-					else{
-						$order=-1;
-					}
-					$sorts[$sort['field']]=$order;
+			// Prepare sorting
+			$sorts=array();
+			foreach($this->query['sort'] as $sort){
+				if($sort['order']=='asc'){
+					$order=1;
 				}
-				$cursor->sort($sorts);
+				else{
+					$order=-1;
+				}
+				$sorts[$sort['field']]=$order;
 			}
-			// Limit/skip
-			if($this->query['limit']){
-				$cursor->limit($this->query['limit']);
-			}
-			if($this->query['skip']){
-				$cursor->skip($this->query['skip']);
-			}
+			// Execute query
+			$query = new \MongoDB\Driver\Query($this->_prepareQuery($this->query['search']), array(
+				'projection' => $projection,
+				'sort' => $sorts,
+				'limit' => $this->query['limit'],
+				'skip' => $this->query['skip']
+			));
+			$cursor = $this->database->getDriver()->executeQuery($this->name, $query);
 			// Save cursor
 			$this->cursor=$cursor;
 		}
@@ -262,11 +241,11 @@ class Query extends AbstractQuery{
 					$value=$search['value'];
 					if(is_array($value)){
 						foreach($value as &$v){
-							$v=new MongoId($v);
+							$v=new \BSON\ObjectID($v);
 						}
 					}
 					else{
-						$value=new MongoId($value);
+						$value=new \BSON\ObjectID($value);
 					}
 				}
 				// Add OR query
@@ -281,11 +260,15 @@ class Query extends AbstractQuery{
 			}
 		}
 		// Return the full query
-		if(count($ands)==1){
-			return $ands[0];
-		}
-		else{
-			return array('$and'=>$ands);
+		switch(count($ands)) {
+			case 0:
+				return array();
+				break;
+			case 1:
+				return $ands[0];
+				break;
+			default:
+				return array('$and'=>$ands);
 		}
 	}
 

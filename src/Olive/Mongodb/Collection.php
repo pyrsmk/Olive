@@ -6,28 +6,12 @@ use MongoId;
 use MongoCollection;
 use Olive\Exception;
 use Olive\AbstractDataContainer;
+use Olive\Mongodb as Database;
 
 /*
 	Collection data container
 */
-class Collection extends AbstractDataContainer{
-
-	/*
-		MongoCollection $collection : collection
-	*/
-	protected $collection;
-
-	/*
-		Constructor
-
-		Parameters
-			Olive\Database $database
-			mixed $name
-	*/
-	public function __construct(Database $database,$name){
-		parent::__construct($database,$name);
-		$this->collection=$this->database->getDriver()->$name;
-	}
+class Collection extends AbstractDataContainer {
 
 	/*
 		Return a new query object
@@ -35,7 +19,7 @@ class Collection extends AbstractDataContainer{
 		Return
 			Olive\Mongodb\Query
 	*/
-	protected function _getNewQuery(){
+	protected function _getNewQuery() {
 		return new Query($this->database, $this->name);
 	}
 
@@ -56,7 +40,9 @@ class Collection extends AbstractDataContainer{
 				 array();
 		// Insert the new document
 		try{
-			$this->collection->insert($document,$options);
+			$bulk = new \MongoDB\Driver\BulkWrite;
+			$bulk->insert($document);
+			$this->database->getDriver()->executeBulkWrite($this->name, $bulk);
 		}
 		catch(\Exception $e){
 			throw new Exception($e->getMessage());
@@ -71,18 +57,6 @@ class Collection extends AbstractDataContainer{
 			array $document : document to insert or update
 			array $options  : driver options
 	*/
-	public function save(array $document){
-		// Get options
-		$options=func_num_args()>1?
-				 (array)func_get_arg(1):
-				 array();
-		// Save document
-		try{
-			$this->collection->save($document,$options);
-		}
-		catch(\Exception $e){
-			throw new Exception($e->getMessage());
-		}
-	}
+	public function save(array $document) {}
 
 }
