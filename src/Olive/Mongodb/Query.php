@@ -111,7 +111,9 @@ class Query extends AbstractQuery {
 		$results=$this->_joinCollectionsTo($results);
 		$result=$results[0];
 		// Format ID
-		$result['_id']=(string)$result['_id'];
+		if(count($result)) {
+			$result['_id']=(string)$result['_id'];
+		}
 		return $result;
 	}
 
