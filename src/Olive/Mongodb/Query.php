@@ -79,6 +79,10 @@ class Query extends AbstractQuery {
 		// Get data
 		$this->_initCursor();
 		$results=iterator_to_array($this->cursor);
+		// Format
+		foreach($results as &$result) {
+			$result = (array)$result;
+		}
 		// Resolve aliases
 		$results=$this->_resolveAliases($this->database->getNamespace().$this->name,$results);
 		// Join collections
@@ -100,7 +104,7 @@ class Query extends AbstractQuery {
 		// Get data
 		$this->_initCursor();
 		$this->cursor->rewind();
-		$result=$this->cursor->current();
+		$result=(array)$this->cursor->current();
 		// Resolve aliases
 		$results=$this->_resolveAliases($this->database->getNamespace().$this->name,array($result));
 		// Join collections
@@ -134,7 +138,7 @@ class Query extends AbstractQuery {
 	public function count(){
 		// Get data
 		$this->_initCursor();
-		return count($this->cursor->toArray());
+		return count(iterator_to_array($this->cursor));
 	}
 
 	/*
@@ -169,7 +173,7 @@ class Query extends AbstractQuery {
 			));
 			$cursor = $this->database->getDriver()->executeQuery($this->name, $query);
 			// Save cursor
-			$this->cursor=$cursor;
+			$this->cursor=new \IteratorIterator($cursor);
 		}
 		catch(\Exception $e){
 			throw new Exception($e->getMessage());
@@ -241,11 +245,11 @@ class Query extends AbstractQuery {
 					$value=$search['value'];
 					if(is_array($value)){
 						foreach($value as &$v){
-							$v=new \BSON\ObjectID($v);
+							$v=new \MongoDB\BSON\ObjectID($v);
 						}
 					}
 					else{
-						$value=new \BSON\ObjectID($value);
+						$value=new \MongoDB\BSON\ObjectID($value);
 					}
 				}
 				// Add OR query

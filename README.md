@@ -1,4 +1,4 @@
-Olive 0.26.0
+Olive 0.26.1
 ============
 
 Olive is a database library that aims to handle several databases with one simple API. It is designed for small to medium projects that don't need to be highly optimized because the API just supports the common tasks.
