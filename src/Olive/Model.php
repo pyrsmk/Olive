@@ -227,11 +227,12 @@ abstract class Model{
 		$container = $this->database->getDataContainer($this->data_container);
 		$query = $this->_prepareOneSearch($container, $search);
 		$query = $this->_prepareSelect($query, $select);
-		if(count((array)$select) == 1) {
-			return $query->fetchFirst();
+		$result = $query->fetchOne();
+		if(count($select) == 1) {
+			return $result[$select[0]];
 		}
 		else{
-			return $query->fetchOne();
+			return $result;
 		}
 	}
 
@@ -383,19 +384,21 @@ abstract class Model{
 	*/
 	protected function _prepareSearch($container, $search) {
 		$search = (array)$search;
+		$query = $container->query();
 		if(!$search) {
-			return $container->search();
+			$query->search();
 		}
 		else {
 			foreach($search as $field => $value) {
 				if(is_array($value)) {
-					return $container->search($field, 'in', $value);
+					$query->search($field, 'in', $value);
 				}
 				else {
-					return $container->search($field, 'is', $value);
+					$query->search($field, 'is', $value);
 				}
 			}
 		}
+		return $query;
 	}
 
 	/*

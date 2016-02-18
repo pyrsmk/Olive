@@ -238,9 +238,9 @@ class Query extends AbstractQuery {
 		foreach($searches as $or_searches){
 			$ors=array();
 			foreach($or_searches as $search){
+				$value=$search['value'];
 				// Format IDs
 				if($search['field']=='_id'){
-					$value=$search['value'];
 					if(is_array($value)){
 						foreach($value as &$v){
 							$v=new \MongoDB\BSON\ObjectID($v);
@@ -389,6 +389,9 @@ class Query extends AbstractQuery {
 					$result = $this->_formatResults((array)$result);
 				}
 			}
+		}
+		else if(is_object($results) && $results instanceof \stdClass) {
+			$results = $this->_formatResults((array)$results);
 		}
 		return $results;
 	}
