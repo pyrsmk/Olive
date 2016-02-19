@@ -41,13 +41,13 @@ class Collection extends AbstractDataContainer {
 		// Insert the new document
 		try{
 			$bulk = new \MongoDB\Driver\BulkWrite;
-			$bulk->insert($document);
+			$id = (string)$bulk->insert($document);
 			$this->database->getDriver()->executeBulkWrite($this->name, $bulk);
 		}
 		catch(\Exception $e){
 			throw new Exception($e->getMessage());
 		}
-		return (string)$document['_id'];
+		return $id;
 	}
 
 	/*
