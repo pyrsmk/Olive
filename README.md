@@ -7,7 +7,7 @@ This project is a proof-of-concept and should be used as is.
 
 Even if you can switch between different database types (like MySQL and MongoDB) with the same project and the same data structure, I __do not__ encourage anyone to do it. Each database system has its own pros and cons and you should choose wisely what to use for your needs. Moreover, some methods on the API can be greedy, like `join()` with MongoDB which runs one additional request per join to retrieve data.
 
-Please not that MongoDB is relation-less and [should not be used with relational data structures](http://www.sarahmei.com/blog/2013/11/11/why-you-should-never-use-mongodb/).
+Please note that MongoDB is relation-less and [should not be used with relational data structures](http://www.sarahmei.com/blog/2013/11/11/why-you-should-never-use-mongodb/).
 
 Installation
 ------------
@@ -276,7 +276,7 @@ $item = $olive->items
               ->search('iditem', 'is', 72)
               ->select('iditem', '_id')
               ->select('text', 'french')
-              ->select('title', 'h1)
+              ->select('title', 'h1')
               ->fetchOne();
 ```
 
@@ -284,16 +284,16 @@ With a SQL database, you could need to set aliases for several tables in your qu
 
 ```php
 $results = $olive->categories
-				 ->search('root.idparent', 'is', $id)
-				 ->from('categories', 'root')
-				 ->from('categories', 'subcategories')
-				 ->join('root.idparent', 'subcategories.idcat')
-				 ->join('subcategories.idcat', 'items.idcat')
-				 ->select('subcategories.idcat', '_id')
-				 ->select('items.title')
-				 ->join('items.idimg', 'images.idimg')
-				 ->select('images.uriimg', 'image')
-				 ->fetch();
+		 ->search('root.idparent', 'is', $id)
+		 ->from('categories', 'root')
+		 ->from('categories', 'subcategories')
+		 ->join('root.idparent', 'subcategories.idcat')
+		 ->join('subcategories.idcat', 'items.idcat')
+		 ->select('subcategories.idcat', '_id')
+		 ->select('items.title')
+		 ->join('items.idimg', 'images.idimg')
+		 ->select('images.uriimg', 'image')
+		 ->fetch();
 ```
 
 ### Join
