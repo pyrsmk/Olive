@@ -1,6 +1,8 @@
 Olive 0.26.7
 ============
 
+__This library is now obsolete. Its successor is [Olive2](https://github.com/pyrsmk/Olive2), a small wrapper around PDO.__
+
 Olive is a database library that aims to handle several databases with one simple API. It is designed for small to medium projects that don't need to be highly optimized because the API just supports the common tasks.
 
 This project is a proof-of-concept and should be used as is.
